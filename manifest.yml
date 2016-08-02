@@ -2,6 +2,6 @@
 ---
 applications:
 - name: python-cf-redis-api
-  memory: 256ggMB
+  memory: 256MB
   buildpack: python_buildpack
   command: python main.py
