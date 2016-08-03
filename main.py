@@ -37,18 +37,27 @@ if not os.getenv("VCAP_APPLICATION"):
         sys.exit(1)
 
 # Look for redis instances in the CF
-redis_instances = list()
+redis_instances = dict()
 vcap_services = os.getenv("VCAP_SERVICES")
 if vcap_services:
     services = json.loads(vcap_services)
     for k in services.keys():
         for i in services[k]:
             if 'redis' in i['tags']:
-                redis_instances.append(i)
+                redis_instances[i['name']] = i['credentials']
 elif config:
-    redis_instances = config['redis']
+    for i in config['redis']:
+        redis_instances[i['name']] = i['credentials']
 else:
-    redis_instances = list()
+    # Just use an empty dict if redis instances can't be located from any source.
+    redis_instances = dict()
+
+# Grab a single redis instance to use by default. Default to None.
+default_redis = None
+if len(redis_instances) > 0:
+    name = redis_instances.keys().pop()
+    default_redis = redis_instances[name]
+    default_redis['name'] = name
 
 
 @app.route('/')
@@ -57,15 +66,35 @@ def main():
     python_version = sys.version
     newline = "<br/>"
     redis_info = ""
-    for i in redis_instances:
-        redis_info += "{0}:{1}{2}".format(i['credentials']['host'], i['credentials']['port'], newline)
+    default_redis_info = ""
+    for name in redis_instances.keys():
+        redis = redis_instances[name]
+        redis_info += "{0}: {1}:{2}{3}".format(name, redis['host'], redis['port'], newline)
 
-    return "python-cf-redis-api started successfully." \
-           "{2}{2}Python: {0}{2}" \
-           "Flask: {1}" \
-           "{2}{2}" \
-           "Redis instances:{2}" \
-           "{3}".format(python_version, flask_version, newline, redis_info)
+    if default_redis:
+        default_redis_info = "{0}: {1}:{2}{3}".format(default_redis['name'],
+                                                      default_redis['host'], default_redis['port'], newline)
+
+    output =  "python-cf-redis-api started successfully. \
+               {2}{2}Python: {0}{2} \
+               Flask: {1} \
+               {2}{2} \
+               Redis instances:{2} \
+               {3}".format(python_version, flask_version, newline, redis_info)
+
+    if default_redis:
+        output += "{1}Default Redis Instance:{1}{0}".format(default_redis_info, newline)
+
+    return output
+
+
+@app.route('/api/redis_instances', methods=['GET'])
+def get_redis_instances():
+    """ Provide a route for getting info about the redis instances in the environment. """
+    if redis_instances:
+        return jsonify(redis_instances)
+    else:
+        abort(404)
 
 
 @app.route('/api/keys/<string:key_value>', methods=['GET'])
@@ -77,6 +106,7 @@ def get_value(key_value):
         abort(404)
 
     return jsonify({'value': value})
+
 
 if __name__ == '__main__':
     """ Setup the app environment and start the Flask application. """

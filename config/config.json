@@ -3,6 +3,7 @@
 
   "redis": [
     {
+      "name": "redis-local",
       "credentials": {
         "host": "localhost",
         "password": "passw0rd",
