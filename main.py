@@ -191,10 +191,28 @@ def set_value(key):
     value = request.json.get('value')
     result = r.set(key, value)
     if result:
-        return jsonify({'result': True})
+        return jsonify({'result': result})
     else:
         app.logger.error("An error occurred updating redis.")
         abort(500)
+
+
+@app.route('/api/key/<string:key>', methods=['DELETE'])
+def delete_key(key):
+    """ Delete the given key from redis """
+    redis_name = request.args.get('redis_instance', None)
+    if redis_name:
+        try:
+            r = redis_clients[redis_name]
+        except KeyError:
+            # Return a 400 if they specified a redis instance that the app doesn't know about.
+            app.logger.error("Requested Redis instance {0} is unknown".format(redis_name))
+            abort(400)
+    else:
+        r = redis_clients[default_redis['name']]
+
+    result = r.delete(key)
+    return jsonify({'result': result})
 
 if __name__ == '__main__':
     """ Setup the app environment and start the Flask application. """
