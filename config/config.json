@@ -5,9 +5,9 @@
     {
       "name": "redis-local",
       "credentials": {
-        "host": "localhost",
+        "host": "172.28.128.3",
         "password": "passw0rd",
-        "port": 8088
+        "port": 6379
       }
     }
   ]

@@ -9,12 +9,13 @@ import os
 import sys
 import redis
 import json
-from flask import Flask, jsonify, abort
+from flask import Flask, jsonify, abort, request
 from flask import __version__ as flask_version
 
 app = Flask(__name__)
 
-test_values = {'food': 'cheese', 'drink': 'coffee', 'animal': 'capybara', '1': 'two'}
+# A test values file, if provided, will pre-load the given key/value pairs into all redis instances.
+TEST_VALUES_FILE = './config/test_values.json'
 
 # Config file should be provided to specify runtime values if not running in CF.
 # If no config is set the app should log an error and fail.
@@ -52,12 +53,44 @@ else:
     # Just use an empty dict if redis instances can't be located from any source.
     redis_instances = dict()
 
+
+# Create a client for each redis instance. Try to verify if the connection is good or not.
+redis_clients = dict()
+for name in redis_instances.keys():
+    r = redis_instances[name]
+    try:
+        redis_client = redis.StrictRedis(socket_timeout=10, **r)
+        if redis_client.ping():
+            redis_clients[name] = redis_client
+            redis_instances[name]['connection_status'] = "Good"
+    except redis.ConnectionError, e:
+        # Failed to connect to redis instance.
+        app.logger.error("Failed to connect to redis at {0}:{1}: {2}".format(r['host'], r['port'], e.message))
+        redis_instances[name]['connection_status'] = e.message
+        redis_clients[name] = None
+    except redis.ResponseError, e:
+        if e.message == 'invalid password':
+            app.logger.error("Password invalid for {0}:{1}".format(r['host'], r['port']))
+            redis_instances[name]['connection_status'] = "Invalid Password"
+            redis_clients[name] = None
+
 # Grab a single redis instance to use by default. Default to None.
 default_redis = None
 if len(redis_instances) > 0:
     name = redis_instances.keys().pop()
     default_redis = redis_instances[name]
     default_redis['name'] = name
+
+# If the user has provided a test values json file, load the values into the redis instances at start-up.
+if os.path.isfile(TEST_VALUES_FILE):
+    with open(TEST_VALUES_FILE) as f:
+        test_values = json.load(f)
+
+    if len(test_values) > 0:
+        for name in redis_instances.keys():
+            if redis_instances[name]['connection_status'] == "Good":
+                client = redis_clients[name]
+                client.mset(test_values)
 
 
 @app.route('/')
@@ -67,20 +100,33 @@ def main():
     newline = "<br/>"
     redis_info = ""
     default_redis_info = ""
+
     for name in redis_instances.keys():
-        redis = redis_instances[name]
-        redis_info += "{0}: {1}:{2}{3}".format(name, redis['host'], redis['port'], newline)
+        r = redis_instances[name]
+        font_color = "red"
+        if r['connection_status'] == "Good":
+            font_color = "green"
+
+        redis_info += "<font color={0}>{1}: {2}:{3} - {4}</font>{5}".format(font_color, name, r['host'], r['port'],
+                                                                            r['connection_status'], newline)
 
     if default_redis:
-        default_redis_info = "{0}: {1}:{2}{3}".format(default_redis['name'],
-                                                      default_redis['host'], default_redis['port'], newline)
+        font_color = "red"
+        if default_redis['connection_status'] == "Good":
+            font_color = "green"
 
-    output =  "python-cf-redis-api started successfully. \
-               {2}{2}Python: {0}{2} \
-               Flask: {1} \
-               {2}{2} \
-               Redis instances:{2} \
-               {3}".format(python_version, flask_version, newline, redis_info)
+        default_redis_info = "<font color={0}>{1}: {2}:{3} - {4}</font>{5}".format(font_color, default_redis['name'],
+                                                                                   default_redis['host'],
+                                                                                   default_redis['port'],
+                                                                                   default_redis['connection_status'],
+                                                                                   newline)
+
+    output = "python-cf-redis-api started successfully. \
+             {2}{2}Python: {0}{2} \
+             Flask: {1} \
+             {2}{2} \
+             Redis instances:{2} \
+             {3}".format(python_version, flask_version, newline, redis_info)
 
     if default_redis:
         output += "{1}Default Redis Instance:{1}{0}".format(default_redis_info, newline)
@@ -97,16 +143,58 @@ def get_redis_instances():
         abort(404)
 
 
-@app.route('/api/keys/<string:key_value>', methods=['GET'])
-def get_value(key_value):
+@app.route('/api/key/<string:key>', methods=['GET'])
+def get_value(key):
     """ GET to the route keys/$key will return the value associated with that key."""
-    try:
-        value = test_values[key_value]
-    except KeyError:
-        abort(404)
+    redis_name = request.args.get('redis_instance', None)
+    value = None
+    if redis_name:
+        try:
+            r = redis_clients[redis_name]
+        except KeyError:
+            # Return a 400 if they specified a redis instance that the app doesn't know about.
+            app.logger.error("Requested Redis instance {0} does is unknown".format(redis_name))
+            abort(400)
+    else:
+        r = redis_clients[default_redis['name']]
+
+    if r:
+        # Get the value for the key from redis. If a value doesn't exist for this key return a 404 error.
+        value = r.get(key)
+        if not value:
+            abort(404)
+    else:
+        abort(500)
 
     return jsonify({'value': value})
 
+
+@app.route('/api/key/<string:key>', methods=['PUT', 'POST'])
+def set_value(key):
+    """ Route to create or update a key/value pair in redis """
+    redis_name = request.args.get('redis_instance', None)
+    if redis_name:
+        try:
+            r = redis_clients[redis_name]
+        except KeyError:
+            # Return a 400 if they specified a redis instance that the app doesn't know about.
+            app.logger.error("Requested Redis instance {0} is unknown".format(redis_name))
+            abort(400)
+    else:
+        r = redis_clients[default_redis['name']]
+
+    if not request.json:
+        abort(400)
+    if 'value' not in request.json:
+        abort(400)
+
+    value = request.json.get('value')
+    result = r.set(key, value)
+    if result:
+        return jsonify({'result': True})
+    else:
+        app.logger.error("An error occurred updating redis.")
+        abort(500)
 
 if __name__ == '__main__':
     """ Setup the app environment and start the Flask application. """
