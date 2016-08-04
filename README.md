@@ -44,7 +44,7 @@ To start the app:
 
 #### Setup 
 
-The `./config` directory contains a couple of files that the app will read at start-up 
+The `config/` directory contains a couple of files that the app will read at start-up 
 and will allow you to set some configuration. 
 
 `config.json` 
