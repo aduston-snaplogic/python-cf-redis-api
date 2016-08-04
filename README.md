@@ -45,7 +45,7 @@ To start the app:
 #### Setup 
 
 The `config/` directory contains a couple of files that the app will read at start-up 
-and will allow you to set some configuration. 
+and will allow you to specify some initial setup parameters for the app.  
 
 `config.json` 
 
@@ -58,20 +58,20 @@ service variable in CloudFoundry. A sample config file is included in `./config_
 `test_values.json`
 
 The app will look for this file at start-up, and if it exists it will load the key-value pairs
-from it into each Redis instance it has access to. This makes it easy to provide some test values without
+from it into each Redis instance it can connect to. This makes it easy to provide some test values without
 setting them manually. 
 
 #### Usage
 
-TThe API provides a couple of endpoints for dealing with Redis instances. 
+The API exposes the following endpoints. 
 
 #### GET /api/redis_instances
 
 Returns the configuration details for the Redis instances in the environment. 
 
-    $ curl -H "Content-Type: application/json" -X GET https://localhost:9099
+    $ curl -H "Content-Type: application/json" -X GET https://localhost:9099/api/redis_instances
     {
-      "python-redis-test-1": {
+      "redis-test-1": {
         "connection_status": "Good",
         "host": "10.72.6.32",
         "name": "redis-test-1",
@@ -97,7 +97,7 @@ Get the value of a key. Returns `404` if the key does not exist.
 
 #### PUT /api/key/:key
 
-Set the value of a key in Redis. The value of the key needs to be provided using in the 'value'
+Set the value of a key in Redis. The value of the key needs to be provided in the 'value'
 field in the of the request data. Will return `"result": true` if the update was successful.
     
     $ curl -H "Content-Type: application/json" -X PUT -d '{"value": "Hooray for kittens."}' https://localhost:9099/api/key/test
