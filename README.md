@@ -1,8 +1,8 @@
 # Python Testing API for Redis and CloudFoundry
 
 This simple [Flask](http://flask.pocoo.org/) based Python application provides 
-a simple RESTful API for interacting with Redis instances. It is designed to run 
-either in CloudFoundry, but also supports running locally or in a non-CF environment.
+a simple RESTful API for interacting with [Redis](http://redis.io). It is designed to run 
+either in [CloudFoundry](https://www.cloudfoundry.org/), but also supports running locally or in a non-CF environment.
 
 The API allows you to get, set, and delete Redis key/value pairs. 
  
