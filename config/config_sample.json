@@ -1,0 +1,14 @@
+{
+  "port": 9099,
+
+  "redis": [
+    {
+      "name": "redis-local",
+      "credentials": {
+        "host": "127.0.01",
+        "password": "passw0rd",
+        "port": 6379
+      }
+    }
+  ]
+}

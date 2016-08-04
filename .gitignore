@@ -134,3 +134,5 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+# Leave out the actual config file. 
+config/config.json
