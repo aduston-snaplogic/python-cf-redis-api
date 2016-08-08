@@ -59,7 +59,7 @@ redis_clients = dict()
 for name in redis_instances.keys():
     r = redis_instances[name]
     try:
-        redis_client = redis.StrictRedis(socket_timeout=10, **r)
+        redis_client = redis.StrictRedis(socket_timeout=10, host=r['host'], port=r['port'], password=r['password'])
         if redis_client.ping():
             redis_clients[name] = redis_client
             redis_instances[name]['connection_status'] = "Good"
