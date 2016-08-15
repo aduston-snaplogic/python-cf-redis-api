@@ -34,7 +34,7 @@ To setup the app with [virtualenv](http://docs.python-guide.org/en/latest/dev/vi
     git clone https://github.com/compybara/python-cf-redis-api.git
     cd python-cf-redis-api
     virtualenv venv
-    source venvv/bin/activate
+    source venv/bin/activate
     pip install -r requirements.txt
     
 To start the app:
