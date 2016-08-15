@@ -120,13 +120,13 @@ Deletes the key in Redis. Returns `1` if the key was found and deleted, and `0` 
       "result": 1
     }
 <!-- Break up the code blocks-->
-    $ curl -H "Content-Type: application/json" -X GET https://localhost:9099/api/key/test?redis_instance=python-redis-test-1
+    $ curl -H "Content-Type: application/json" -X GET https://localhost:9099/api/key/test
     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
     <title>404 Not Found</title>
     <h1>Not Found</h1>
     <p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>
 <!-- Break up the code blocks-->
-    $ curl -H "Content-Type: application/json" -X DELETE https://python-cf-redis-api.run.aws-usw02-pr.ice.predix.io/api/key/test
+    $ curl -H "Content-Type: application/json" -X DELETE https://localhost:9099/api/key/test
     {
       "result": 0
     }
