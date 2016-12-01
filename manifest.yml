@@ -5,4 +5,4 @@ applications:
   memory: 256MB
   disk: 256MB
   buildpack: python_buildpack
-  command: python main.py
+  command: python run.py

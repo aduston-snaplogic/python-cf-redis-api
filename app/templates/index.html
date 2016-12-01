@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>{{title}}</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+        <div id="info">
+            <h1>{{title}}</h1>
+            <p>Operating System:&nbsp;&nbsp;<b>{{os_info}}</b></p>
+            <p>Python Version:&nbsp;&nbsp;<b>{{python_version}}</b></p>
+            <p>Flask Version:&nbsp;&nbsp;<b>{{flask_version}}</b></p>
+        </div>
+
+        <div id="services">
+            <h2>Redis Instances</h2>
+            <dl>
+            {% for name, redis_service in redis_instances.iteritems() %}
+            <dt>{{ name }}</dt>
+                {% if redis_service.connection_status == "Good" %}
+                <dd><font color="green">{{ redis_service.host }}:{{ redis_service.port }} - {{redis_service.connection_status}}</font></dd>
+                {% else %}
+                <dd><font color="red">{{ redis_service.host }}:{{ redis_service.port }} - {{redis_service.connection_status}}</font></dd>
+                {% endif %}
+            {% endfor %}
+            </dl>
+        </div>
+    </body>
+</html>
