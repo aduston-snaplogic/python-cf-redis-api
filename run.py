@@ -38,6 +38,7 @@ if __name__ == '__main__':
         app.logger.error("Could not load config file. Does not contain valid JSON data.")
 
     # If a config was provided and loaded try to set up some values from it.
+    config_port = None
     if config:
         try:
             # Turn on debug logging if specified.
@@ -47,15 +48,14 @@ if __name__ == '__main__':
         except KeyError:
             app.logger.info("Debug logging not enabled.")
 
+
         try:
             config_port = int(config['port'])
 
         except KeyError:
             app.logger.info("No port specified in config file. ")
-            config_port = None
         except TypeError:
             app.logger.error("Port specified in config file must be an Integer.")
-            config_port = None
 
     app.logger.addHandler(handler)
 

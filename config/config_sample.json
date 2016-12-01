@@ -1,6 +1,6 @@
 {
   "port": 9099,
-
+  "debug": false,
   "redis": [
     {
       "name": "redis-local",

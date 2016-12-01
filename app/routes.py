@@ -25,8 +25,8 @@ def redis_instances():
     output_dict = dict()
     if len(services.redis_instances.keys()) > 0:
         for name, redis in services.redis_instances.iteritems():
-            output_dict[name] = redis.__dict__
-
+            app.logger.debug("{0}: {1}".format(name, redis.__dict__))
+            output_dict[name] = redis.to_dict()
         return jsonify(output_dict)
     else:
         return jsonify({})
@@ -45,7 +45,10 @@ def get_value(key):
             app.logger.error("Requested Redis instance {0} does is unknown".format(redis_name))
             abort(400, "{} is not a known Redis service.".format(redis_name))
     else:
-        r = services.redis_instances['default']
+        try:
+            r = services.redis_instances['default']
+        except KeyError:
+            abort(502, "No Redis services available.")
 
     if r:
         # Get the client and verify the connection status.
@@ -76,7 +79,10 @@ def set_value(key):
             app.logger.error("Requested Redis instance {0} is unknown".format(redis_name))
             abort(400, "{} is not a known Redis service.".format(redis_name))
     else:
-        r = services.redis_instances['default']
+        try:
+            r = services.redis_instances['default']
+        except KeyError:
+            abort(502, "No Redis services available.")
 
     if not request.json:
         abort(400, "No data provided.")
@@ -114,7 +120,10 @@ def delete_key(key):
             app.logger.error("Requested Redis instance {0} is unknown".format(redis_name))
             abort(400, "{} is not a known Redis service.".format(redis_name))
     else:
-        r = services.redis_instances['default']
+        try:
+            r = services.redis_instances['default']
+        except KeyError:
+            abort(502, "No Redis services available.")
 
     if r:
         client = r.client

@@ -55,11 +55,6 @@ the bind port for the application as well as the Redis instances it should use. 
 structure of the `redis` section of the config is designed to mirror the structure of the
 service variable in CloudFoundry. A sample config file is included in `./config_sample/config.json`. 
 
-`test_values.json`
-
-The app will look for this file at start-up, and if it exists it will load the key-value pairs
-from it into each Redis instance it can connect to. This makes it easy to provide some test values without
-setting them manually. 
 
 #### Usage
 

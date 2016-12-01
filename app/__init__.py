@@ -9,7 +9,6 @@ from flask import Flask
 # Initialize the Flask app
 app = Flask(__name__)
 
-app.logger.handlers
-# Import the routes
+# Import the routes and services modules
 from app import services
 from app import routes

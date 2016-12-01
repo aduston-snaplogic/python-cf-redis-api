@@ -2,13 +2,10 @@
 services.py - Define tools for discovering and connecting to Redis services.
 """
 from cfenv import AppEnv
-import os
-import sys
 import redis
 
-from flask import Flask
+from app import app
 
-app = Flask(__name__)
 redis_instances = dict()
 
 
@@ -21,7 +18,7 @@ class RedisService:
     def __init__(self, host, port=6379, password=""):
         """ Constructor for the RediService takes the credentials as keyword args. """
         self._host = host
-        self.port = port
+        self._port = port
         self._password = password
 
     @property
@@ -53,7 +50,7 @@ class RedisService:
     def client(self):
         """ Returns the Redis service client """
         if not self._client:
-            self._client = self.get_client()
+            self._client = self.__get_client()
 
         return self._client
 
@@ -62,23 +59,28 @@ class RedisService:
         """ Check whether the redis connection status is good. Returns a status string. """
         return self._connection_status
 
-    def get_client(self):
+    def __get_client(self):
         """ Create a connection to the Redis Service """
+        client = None
         try:
+            app.logger.debug("Creating Redis client for {0}:{1}".format(self._host, self._port))
             client = redis.StrictRedis(socket_timeout=10, host=self._host, port=self._port, password=self._password)
             if client.ping():
-                self._client = client
                 self._connection_status = "Good"
         except redis.ConnectionError, e:
             app.logger.error("Failed to connect to redis at {0}:{1}: {2}".format(self._host, self._port, e.message))
             self._connection_status = e.message
-            self._client = None
         except redis.ResponseError, e:
             if e.message == 'invalid password':
                 app.logger.error("Password invalid for {0}:{1}".format(self._host, self._port))
                 self._connection_status = "Invalid Password"
-                self._client = None
+        return client
 
+    def to_dict(self):
+        """" Special function to return the class attributes as a dictionary.
+             Meant to use in place of __dict__ so that the key names don't have trailing __ on them.
+        """
+        return {"host": self._host, "port": self._port, "password": self._password}
 
 def discover_services(config):
     """ Create the dict of redis_instances. If they can't be parsed from the CF environemnt use the config file. """
@@ -88,6 +90,7 @@ def discover_services(config):
         services = env.services
         for s in services:
             if 'redis' in s.env['tags']:
+                app.logger.debug("Creating RedisService object for {0}".format(s.credentials))
                 redis_instances[s.name] = RedisService(**s.credentials)
 
     else:
